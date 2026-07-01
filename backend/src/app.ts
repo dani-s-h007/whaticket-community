@@ -12,22 +12,24 @@ import AppError from "./errors/AppError";
 import routes from "./routes";
 import { logger } from "./utils/logger";
 
-Sentry.init({ dsn: process.env.SENTRY_DSN });
+// Initialize Sentry only if DSN is provided to prevent startup crashes
+if (process.env.SENTRY_DSN) {
+  Sentry.init({ dsn: process.env.SENTRY_DSN });
+}
 
 const app = express();
-
-// Updated CORS configuration to handle dynamic Vercel preview URLs
-const allowedOrigins = [process.env.FRONTEND_URL];
 
 app.use(
   cors({
     credentials: true,
     origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps or curl requests)
+      // 1. Allow mobile apps or server-to-server requests
       if (!origin) return callback(null, true);
       
-      // Allow if it matches the configured FRONTEND_URL or any vercel.app preview
-      if (allowedOrigins.indexOf(origin) !== -1 || origin.endsWith('.vercel.app')) {
+      // 2. Allow configured production URL or any Vercel preview domain
+      const isAllowed = origin === process.env.FRONTEND_URL || origin.endsWith('.vercel.app');
+      
+      if (isAllowed) {
         callback(null, true);
       } else {
         callback(new Error('Not allowed by CORS'));
@@ -42,15 +44,16 @@ app.use(Sentry.Handlers.requestHandler());
 app.use("/public", express.static(uploadConfig.directory));
 app.use(routes);
 
+// Error handling must come after routes
 app.use(Sentry.Handlers.errorHandler());
 
 app.use(async (err: Error, req: Request, res: Response, _: NextFunction) => {
   if (err instanceof AppError) {
-    logger.warn(err);
+    logger.warn(`AppError: ${err.message}`);
     return res.status(err.statusCode).json({ error: err.message });
   }
 
-  logger.error(err);
+  logger.error(`Unhandled Error: ${err.message}`);
   return res.status(500).json({ error: "Internal server error" });
 });
 
