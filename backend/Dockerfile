@@ -1,4 +1,4 @@
-FROM node:14 as build-deps
+FROM node:14-bullseye as build-deps
 
 RUN apt-get update && apt-get install -y wget
 
@@ -29,12 +29,12 @@ COPY . .
 RUN npm run build
 
 ENV NODE_ENV=production
-ENV PORT=3000
+ENV PORT=8080
 ENV CHROME_BIN=google-chrome-stable
 
-EXPOSE 3000
+EXPOSE 8080
 
 ENTRYPOINT ["dumb-init", "--"]
-CMD dockerize -wait tcp://${DB_HOST}:3306 \
+CMD dockerize -wait tcp://${DB_HOST}:5432 \
   && npx sequelize db:migrate \
   && node dist/server.js
