@@ -2,15 +2,6 @@ FROM node:14-bullseye as build-deps
 
 RUN apt-get update && apt-get install -y wget
 
-# Install dockerize
-ENV DOCKERIZE_VERSION v0.6.1
-RUN wget https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSION/dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz \
-    && tar -C /usr/local/bin -xzvf dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz \
-    && rm dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz
-
-# Force IPv4 resolution globally for the container
-RUN echo 'precedence ::ffff:0:0/96 100' >> /etc/gai.conf
-
 # Install Chrome
 RUN apt-get update \
     && apt-get install -y wget gnupg \
@@ -42,7 +33,7 @@ EXPOSE 8080
 
 ENTRYPOINT ["dumb-init", "--"]
 
-# Final CMD: Using -wait with specific timeout and forced IPv4 via /etc/gai.conf tweak above
-CMD dockerize -wait tcp://${DB_HOST}:5432 -timeout 60s \
+# Final CMD: Using sleep to wait for network stabilization, then running migration
+CMD sleep 15 \
   && npx sequelize db:migrate \
   && node dist/server.js
