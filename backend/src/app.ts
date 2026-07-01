@@ -16,12 +16,26 @@ Sentry.init({ dsn: process.env.SENTRY_DSN });
 
 const app = express();
 
+// Updated CORS configuration to handle dynamic Vercel preview URLs
+const allowedOrigins = [process.env.FRONTEND_URL];
+
 app.use(
   cors({
     credentials: true,
-    origin: process.env.FRONTEND_URL
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+      
+      // Allow if it matches the configured FRONTEND_URL or any vercel.app preview
+      if (allowedOrigins.indexOf(origin) !== -1 || origin.endsWith('.vercel.app')) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    }
   })
 );
+
 app.use(cookieParser());
 app.use(express.json());
 app.use(Sentry.Handlers.requestHandler());
