@@ -8,6 +8,9 @@ RUN wget https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSI
     && tar -C /usr/local/bin -xzvf dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz \
     && rm dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz
 
+# Force IPv4 resolution globally for the container
+RUN echo 'precedence ::ffff:0:0/96 100' >> /etc/gai.conf
+
 # Install Chrome
 RUN apt-get update \
     && apt-get install -y wget gnupg \
@@ -39,7 +42,7 @@ EXPOSE 8080
 
 ENTRYPOINT ["dumb-init", "--"]
 
-# Updated CMD to ensure IPv4-only TCP connection with timeout
+# Final CMD: Using -wait with specific timeout and forced IPv4 via /etc/gai.conf tweak above
 CMD dockerize -wait tcp://${DB_HOST}:5432 -timeout 60s \
   && npx sequelize db:migrate \
   && node dist/server.js
