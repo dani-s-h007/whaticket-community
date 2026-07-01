@@ -9,6 +9,7 @@ import {
   BeforeUpdate,
   PrimaryKey,
   AutoIncrement,
+  Default,
   HasMany,
   BelongsToMany,
   ForeignKey,
@@ -21,7 +22,7 @@ import UserQueue from "./UserQueue";
 import Whatsapp from "./Whatsapp";
 
 @Table({
-  tableName: "Users" // Fixes the table mapping issue
+  tableName: "Users"
 })
 class User extends Model<User> {
   @PrimaryKey
@@ -40,6 +41,12 @@ class User extends Model<User> {
 
   @Column
   passwordHash: string;
+
+  // --- ADD THIS LINE TO FIX THE BUILD ERROR ---
+  @Default(0)
+  @Column
+  tokenVersion: number;
+  // ---------------------------------------------
 
   @Column
   profile: string;
