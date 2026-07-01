@@ -1,8 +1,9 @@
-FROM node:14-bullseye as build-deps
+# Upgrade to Node 20 to support modern dependencies and better networking
+FROM node:20-bullseye as build-deps
 
 RUN apt-get update && apt-get install -y wget
 
-# Install Chrome
+# Install Chrome (Updated to handle modern dependencies)
 RUN apt-get update \
     && apt-get install -y wget gnupg \
     && wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
@@ -33,7 +34,7 @@ EXPOSE 8080
 
 ENTRYPOINT ["dumb-init", "--"]
 
-# Final CMD: Using sleep to wait for network stabilization, then running migration
+# Simple startup: Sleep to wait for network stabilization
 CMD sleep 15 \
   && npx sequelize db:migrate \
   && node dist/server.js
